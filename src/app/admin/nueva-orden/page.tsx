@@ -5,14 +5,15 @@ import { DEVICE_TYPES, DEVICE_BRANDS, ServiceOrder } from "@/types/order";
 import { Save, ArrowLeft, Printer, CheckCircle, Eye, MessageCircle, PlusCircle, FileDown } from "lucide-react";
 import { formatMoney } from "@/lib/currencies";
 import Link from "next/link";
+import { useCurrency } from "@/components/providers/currency-provider";
 import { PhotoUpload } from "@/components/photo-upload";
 
 export default function NuevaOrdenPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [createdOrder, setCreatedOrder] = useState<ServiceOrder | null>(null);
-  const [currency, setCurrency] = useState("MXN");
-  
+  const { currency } = useCurrency();
+
   const [form, setForm] = useState({
     customerName: "",
     customerPhone: "",
@@ -35,10 +36,7 @@ export default function NuevaOrdenPage() {
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((settings) => {
-        if (settings?.currency) setCurrency(settings.currency);
-      })
-      .catch(() => {});
+      .catch(() => { });
 
     // Load draft from localStorage
     const draft = localStorage.getItem('orderDraft');
@@ -47,7 +45,7 @@ export default function NuevaOrdenPage() {
         const parsed = JSON.parse(draft);
         if (parsed.form) setForm(parsed.form);
         setHasDraft(true);
-      } catch {}
+      } catch { }
     }
   }, []);
 
@@ -112,7 +110,7 @@ export default function NuevaOrdenPage() {
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    
+
     if (name === "customerPhone") {
       const cleaned = value.replace(/\D/g, "");
       if (value && cleaned.length < 4) {
@@ -167,7 +165,7 @@ export default function NuevaOrdenPage() {
     if (!createdOrder) return;
     const o = createdOrder;
     const s = await fetch("/api/settings").then(r => r.json()).catch(() => ({}));
-    if (s?.currency) setCurrency(s.currency);
+    // Removed local currency set
     const bName = s.businessName || "Mi Taller";
     const bInfo = [s.address, s.phone].filter(Boolean).join(" | Tel: ");
     const printWindow = window.open("", "_blank");
@@ -212,7 +210,7 @@ ${o.accessories ? `<div class="row"><span class="label">Accesorios:</span><span 
     if (!createdOrder) return;
     const o = createdOrder;
     const s = await fetch("/api/settings").then(r => r.json()).catch(() => ({}));
-    const cur = s?.currency || currency;
+    const cur = currency;
     const bName = s.businessName || "Mi Taller";
     const bInfo = [s.address, s.phone].filter(Boolean).join(" | Tel: ");
 

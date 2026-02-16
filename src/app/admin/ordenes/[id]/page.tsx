@@ -14,6 +14,7 @@ import Link from "next/link";
 import { ArrowLeft, Save, Copy, Check, Printer, Plus, Trash2, Clock, MessageSquare, MessageCircle, Wrench, FileText, Send, ThumbsUp, ThumbsDown, ChevronDown } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { formatMoney, formatMoneyShort } from "@/lib/currencies";
+import { useCurrency } from "@/components/providers/currency-provider";
 import { SignaturePad } from "@/components/signature-pad";
 import { PhotoUpload } from "@/components/photo-upload";
 
@@ -37,24 +38,28 @@ export default function OrderDetailPage() {
   const [success, setSuccess] = useState("");
   const [copied, setCopied] = useState(false);
   const [newNote, setNewNote] = useState("");
-  const [currency, setCurrency] = useState("MXN");
+  const { currency } = useCurrency();
   const [budgetNote, setBudgetNote] = useState("");
   const [sendingBudget, setSendingBudget] = useState(false);
-  const [availableServices, setAvailableServices] = useState<{id:string;name:string;basePrice:number;linkedPartId?:string;linkedPartName?:string;linkedPartCost?:number}[]>([]);
-  const [selectedServices, setSelectedServices] = useState<{id:string;name:string;basePrice:number;linkedPartId?:string;linkedPartName?:string;linkedPartCost?:number}[]>([]);
+  const [availableServices, setAvailableServices] = useState<{ id: string; name: string; basePrice: number; linkedPartId?: string; linkedPartName?: string; linkedPartCost?: number }[]>([]);
+  const [selectedServices, setSelectedServices] = useState<{ id: string; name: string; basePrice: number; linkedPartId?: string; linkedPartName?: string; linkedPartCost?: number }[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+
+  const [parts, setParts] = useState<{ id: string; name: string; stock: number }[]>([]);
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/orders/${id}`).then((res) => { if (!res.ok) throw new Error("Not found"); return res.json(); }),
       fetch("/api/settings").then((res) => res.json()),
       fetch("/api/services").then((res) => res.json()).catch(() => []),
-    ]).then(([data, settings, servicesData]) => {
+      fetch("/api/parts").then((res) => res.json()).catch(() => []),
+    ]).then(([data, settings, servicesData, partsData]) => {
       setOrder({ ...data, statusHistory: data.statusHistory || [], internalNotes: data.internalNotes || [], usedParts: data.usedParts || [], devicePhotos: data.devicePhotos || [], budgetStatus: data.budgetStatus || "none" });
       setAvailableServices(Array.isArray(servicesData) ? servicesData : []);
+      setParts(Array.isArray(partsData) ? partsData : []);
       if (data.selectedServices) setSelectedServices(data.selectedServices);
-      if (settings?.currency) setCurrency(settings.currency);
+
       setLoading(false);
     }).catch(() => {
       setError("Orden no encontrada");
@@ -340,13 +345,12 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
                 onClick={() => !budgetBlocked && handleStatusChange(status)}
                 disabled={budgetBlocked}
                 title={budgetBlocked ? "Requiere aprobación del presupuesto" : ""}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 ${
-                  isActive
-                    ? `${config.bgColor} ${config.color} border-current`
-                    : budgetBlocked
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border-2 ${isActive
+                  ? `${config.bgColor} ${config.color} border-current`
+                  : budgetBlocked
                     ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
                     : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
-                }`}
+                  }`}
               >
                 {config.label}
                 {budgetBlocked && " 🔒"}
@@ -368,11 +372,10 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
 
       {/* Budget Status */}
       {(order.budgetStatus === "pending" || order.budgetStatus === "approved" || order.budgetStatus === "rejected") && (
-        <div className={`card mb-6 ${
-          order.budgetStatus === "pending" ? "border-amber-300 bg-amber-50" :
+        <div className={`card mb-6 ${order.budgetStatus === "pending" ? "border-amber-300 bg-amber-50" :
           order.budgetStatus === "approved" ? "border-green-300 bg-green-50" :
-          "border-red-300 bg-red-50"
-        }`}>
+            "border-red-300 bg-red-50"
+          }`}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-start gap-2">
               {order.budgetStatus === "pending" && <FileText className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />}
@@ -396,11 +399,10 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
                 )}
               </div>
             </div>
-            <span className={`status-badge shrink-0 w-fit ${
-              order.budgetStatus === "pending" ? "bg-amber-200 text-amber-800" :
+            <span className={`status-badge shrink-0 w-fit ${order.budgetStatus === "pending" ? "bg-amber-200 text-amber-800" :
               order.budgetStatus === "approved" ? "bg-green-200 text-green-800" :
-              "bg-red-200 text-red-800"
-            }`}>
+                "bg-red-200 text-red-800"
+              }`}>
               {order.budgetStatus === "pending" ? "Pendiente" : order.budgetStatus === "approved" ? "Aprobado" : "Rechazado"}
             </span>
           </div>
@@ -474,11 +476,11 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
               <p className="text-xs text-blue-700 mb-3">
                 Este diagnóstico detallado será visible para el cliente en el portal cuando revise el presupuesto. Explica la falla encontrada y qué se necesita hacer.
               </p>
-              <textarea 
-                name="detailedDiagnosis" 
-                value={order.detailedDiagnosis || ""} 
-                onChange={handleChange} 
-                rows={6} 
+              <textarea
+                name="detailedDiagnosis"
+                value={order.detailedDiagnosis || ""}
+                onChange={handleChange}
+                rows={6}
                 className="input-field resize-none text-sm"
                 placeholder="Ejemplo: Se encontró que la tarjeta madre presenta un corto circuito en el sistema de carga. El componente U7400 (chip de carga) está dañado. Se requiere reemplazo del chip mediante técnica de microsoldadura y limpieza profunda del área afectada. También se detectó oxidación en el conector de batería que debe ser tratada..."
               />
@@ -517,24 +519,32 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
                         {availableServices.filter(s => !selectedServices.find(ss => ss.id === s.id)).length === 0 ? (
                           <div className="px-4 py-3 text-sm text-gray-400">Todos los servicios ya están agregados</div>
                         ) : (
-                          availableServices.filter(s => !selectedServices.find(ss => ss.id === s.id)).map((s) => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => {
-                                if (!order) return;
-                                if (!selectedServices.find(ss => ss.id === s.id)) {
-                                  setSelectedServices([...selectedServices, s]);
-                                }
-                                setSelectedServiceId("");
-                                setShowServiceDropdown(false);
-                              }}
-                              className="w-full text-left px-4 py-3 hover:bg-purple-50 transition-colors border-b border-gray-50 last:border-b-0 flex items-center justify-between"
-                            >
-                              <span className="text-sm font-medium text-gray-900">{s.name}</span>
-                              <span className="text-sm font-semibold text-purple-600">{formatMoneyShort(s.basePrice, currency)}</span>
-                            </button>
-                          ))
+                          availableServices.filter(s => !selectedServices.find(ss => ss.id === s.id)).map((s) => {
+                            const linkedPart = s.linkedPartId ? parts.find(p => p.id === s.linkedPartId) : null;
+                            const hasStock = linkedPart ? linkedPart.stock > 0 : true;
+
+                            return (
+                              <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => {
+                                  if (!order) return;
+                                  if (!selectedServices.find(ss => ss.id === s.id)) {
+                                    setSelectedServices([...selectedServices, s]);
+                                  }
+                                  setSelectedServiceId("");
+                                  setShowServiceDropdown(false);
+                                }}
+                                className="w-full text-left px-4 py-3 hover:bg-purple-50 transition-colors border-b border-gray-50 last:border-b-0 flex items-center justify-between"
+                              >
+                                <div>
+                                  <span className={`text-sm font-medium ${hasStock ? "text-gray-900" : "text-gray-500"}`}>{s.name}</span>
+                                  {!hasStock && <span className="text-xs text-red-500 ml-2">(Sin stock)</span>}
+                                </div>
+                                <span className={`text-sm font-semibold ${hasStock ? "text-purple-600" : "text-gray-400"}`}>{formatMoneyShort(s.basePrice, currency)}</span>
+                              </button>
+                            );
+                          })
                         )}
                       </div>
                     )}
@@ -707,10 +717,10 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
           <h3 className="font-semibold text-gray-900 mb-3">Firma del Cliente</h3>
           {order.signature || order.approvalSignature ? (
             <div className="p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
-              <img 
-                src={order.approvalSignature || order.signature} 
-                alt="Firma del cliente" 
-                className="max-h-32 mx-auto" 
+              <img
+                src={order.approvalSignature || order.signature}
+                alt="Firma del cliente"
+                className="max-h-32 mx-auto"
               />
               <p className="text-xs text-gray-500 text-center mt-2">
                 {order.approvalSignature ? "Firmado al aprobar presupuesto" : "Firma de recepción"}

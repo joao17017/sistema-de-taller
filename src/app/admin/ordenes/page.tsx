@@ -5,6 +5,7 @@ import { ServiceOrder, STATUS_CONFIG, OrderStatus } from "@/types/order";
 import Link from "next/link";
 import { Search, Trash2, Eye, Filter, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatMoneyShort } from "@/lib/currencies";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 const PAGE_SIZE = 20;
 
@@ -14,18 +15,17 @@ export default function OrdenesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const [currency, setCurrency] = useState("MXN");
+  const { currency } = useCurrency();
 
   useEffect(() => {
     fetchOrders();
-    fetch("/api/settings").then(r => r.json()).then(s => { if (s?.currency) setCurrency(s.currency); }).catch(() => {});
   }, []);
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch("/api/orders");
+      const res = await fetch("/api/orders?limit=10000");
       const data = await res.json();
-      setOrders(Array.isArray(data) ? data : []);
+      setOrders(Array.isArray(data?.orders) ? data.orders : Array.isArray(data) ? data : []);
     } catch {
       setOrders([]);
     } finally {
@@ -292,9 +292,8 @@ export default function OrdenesPage() {
                   {i > 0 && arr[i - 1] !== p - 1 && <span className="px-1 text-gray-300">...</span>}
                   <button
                     onClick={() => setPage(p)}
-                    className={`w-8 h-8 rounded-lg text-sm font-medium ${
-                      p === page ? "bg-primary-600 text-white" : "hover:bg-gray-100 text-gray-600"
-                    }`}
+                    className={`w-8 h-8 rounded-lg text-sm font-medium ${p === page ? "bg-primary-600 text-white" : "hover:bg-gray-100 text-gray-600"
+                      }`}
                   >
                     {p}
                   </button>

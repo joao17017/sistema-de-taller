@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Database, Download, ShieldCheck } from "lucide-react";
+import { Lock, ShieldCheck } from "lucide-react";
 
 export default function CuentaPage() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -122,36 +122,7 @@ export default function CuentaPage() {
         </div>
       </div>
 
-      <div className="card">
-        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Database className="h-5 w-5" />
-          Respaldo de Información
-        </h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Descarga un respaldo de todas las órdenes de servicio, configuración y partes del inventario.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <a
-            href="/api/export?format=csv"
-            download
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-green-50 text-green-700 rounded-lg border border-green-200 hover:bg-green-100 transition-colors font-medium text-sm"
-          >
-            <Download className="h-4 w-4" />
-            Exportar Órdenes (Excel/CSV)
-          </a>
-          <a
-            href="/api/export?format=json"
-            download
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors font-medium text-sm"
-          >
-            <Download className="h-4 w-4" />
-            Backup Completo (JSON)
-          </a>
-        </div>
-        <p className="text-xs text-gray-400 mt-3">
-          El archivo CSV se abre directamente en Excel. El archivo JSON incluye toda la información del sistema (órdenes, configuración e inventario).
-        </p>
-      </div>
+
     </div>
   );
 }

@@ -19,6 +19,7 @@ import {
   ArrowDownRight,
 } from "lucide-react";
 import { formatMoneyShort } from "@/lib/currencies";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 const RechartsLine = dynamic(() => import("recharts").then(m => {
   const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } = m;
@@ -27,12 +28,12 @@ const RechartsLine = dynamic(() => import("recharts").then(m => {
       <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="colorOrdenes" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
+            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
-            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -85,17 +86,16 @@ const DONUT_COLORS: Record<OrderStatus, string> = {
 export default function AdminDashboard() {
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currency, setCurrency] = useState("MXN");
+  const { currency } = useCurrency();
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/orders").then(r => r.json()),
-      fetch("/api/settings").then(r => r.json()).catch(() => ({})),
-    ]).then(([data, settings]) => {
-      setOrders(Array.isArray(data) ? data : []);
-      if (settings?.currency) setCurrency(settings.currency);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    fetch("/api/orders?limit=10000")
+      .then(r => r.json())
+      .then((data) => {
+        setOrders(Array.isArray(data?.orders) ? data.orders : Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const statusCounts = useMemo(() => orders.reduce((acc, o) => {
@@ -124,11 +124,11 @@ export default function AdminDashboard() {
     (Object.keys(STATUS_CONFIG) as OrderStatus[])
       .map(s => ({ name: STATUS_CONFIG[s].label, value: statusCounts[s] || 0 }))
       .filter(d => d.value > 0),
-  [statusCounts]);
+    [statusCounts]);
 
   const recentOrders = useMemo(() =>
     [...orders].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 6),
-  [orders]);
+    [orders]);
 
   const recentActivity = useMemo(() => {
     const items: { id: string; icon: React.ElementType; color: string; bg: string; text: string; sub: string; time: string }[] = [];

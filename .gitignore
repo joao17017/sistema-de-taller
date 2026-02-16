@@ -4,3 +4,8 @@ data/
 *.tsbuildinfo
 next-env.d.ts
 *.zip
+.env.local
+.env*.local
+
+# MCP Configuration
+.vscode/mcp-servers.json

@@ -23,7 +23,18 @@ export function createSessionToken(): string {
 export function validateSessionToken(token: string): boolean {
   if (!token || !token.includes(".")) return false;
   const [raw, hash] = token.split(".");
-  return hashToken(raw) === hash;
+  if (hashToken(raw) !== hash) return false;
+
+  // Check expiration (24 hours)
+  const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+  try {
+    const timestamp = parseInt(raw.split("-")[0], 10);
+    if (isNaN(timestamp) || Date.now() - timestamp > SESSION_MAX_AGE_MS) return false;
+  } catch {
+    return false;
+  }
+
+  return true;
 }
 
 export function getSessionFromCookies(): boolean {

@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
     const service: RepairService = {
       id: uuidv4(),
       name: body.name || "",
+      description: body.description || undefined,
+      category: body.category || "General",
       basePrice: body.basePrice || 0,
       linkedPartId: body.linkedPartId || undefined,
       linkedPartName: body.linkedPartName || undefined,
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    const saved = saveService(service);
+    const saved = await saveService(service);
     return NextResponse.json(saved, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: "Error al crear servicio" }, { status: 500 });

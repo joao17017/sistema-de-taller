@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { STATUS_CONFIG, OrderStatus } from "@/types/order";
 import { formatMoney } from "@/lib/currencies";
+import { useCurrency } from "@/components/providers/currency-provider";
 import { SignaturePad } from "@/components/signature-pad";
 import {
   Monitor,
@@ -62,7 +63,7 @@ export default function ClientPortalPage() {
   const [order, setOrder] = useState<ClientOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [currency, setCurrency] = useState("MXN");
+  const { currency } = useCurrency();
   const [businessName, setBusinessName] = useState("Mi Taller");
   const [logoUrl, setLogoUrl] = useState("");
   const [approving, setApproving] = useState(false);
@@ -84,7 +85,6 @@ export default function ClientPortalPage() {
     ])
       .then(([data, settings]) => {
         setOrder(data);
-        if (settings?.currency) setCurrency(settings.currency);
         if (settings?.businessName) setBusinessName(settings.businessName);
         if (settings?.logoUrl) setLogoUrl(settings.logoUrl);
         setLoading(false);
@@ -97,13 +97,13 @@ export default function ClientPortalPage() {
 
   const handleBudgetAction = async (action: "approve" | "reject") => {
     if (!order) return;
-    
+
     // Validate signature for approval
     if (action === "approve" && !approvalSignature) {
       setBudgetError("Por favor firma para aprobar el presupuesto");
       return;
     }
-    
+
     if (action === "approve") setApproving(true);
     else setRejecting(true);
 
@@ -111,8 +111,8 @@ export default function ClientPortalPage() {
       const res = await fetch(`/api/orders/${order.id}/budget`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          action, 
+        body: JSON.stringify({
+          action,
           clientNote: clientNote.trim() || undefined,
           approvalSignature: action === "approve" ? approvalSignature : undefined
         }),
@@ -120,10 +120,10 @@ export default function ClientPortalPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setOrder({ 
-          ...order, 
-          budgetStatus: data.budgetStatus, 
-          budgetRespondedAt: new Date().toISOString(), 
+        setOrder({
+          ...order,
+          budgetStatus: data.budgetStatus,
+          budgetRespondedAt: new Date().toISOString(),
           clientNote: clientNote.trim() || undefined,
           approvalSignature: action === "approve" ? approvalSignature : undefined
         });
@@ -224,23 +224,20 @@ export default function ClientPortalPage() {
               return (
                 <div key={step} className="flex-1 flex flex-col items-center relative">
                   <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
-                      isCompleted
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${isCompleted
                         ? "bg-primary-600 text-white"
                         : "bg-gray-100 text-gray-400"
-                    } ${isCurrent ? "ring-4 ring-primary-100 scale-110" : ""}`}
+                      } ${isCurrent ? "ring-4 ring-primary-100 scale-110" : ""}`}
                   >
                     {isCompleted ? <CheckCircle className="h-4 w-4" /> : index + 1}
                   </div>
-                  <p className={`text-[9px] mt-1.5 text-center leading-tight ${
-                    isCompleted ? "text-primary-600 font-semibold" : "text-gray-400"
-                  }`}>
+                  <p className={`text-[9px] mt-1.5 text-center leading-tight ${isCompleted ? "text-primary-600 font-semibold" : "text-gray-400"
+                    }`}>
                     {STATUS_CONFIG[step].label}
                   </p>
                   {index < STATUS_STEPS.length - 1 && (
-                    <div className={`absolute top-4 left-[55%] w-[90%] h-0.5 ${
-                      index < currentStepIndex ? "bg-primary-600" : "bg-gray-200"
-                    }`} />
+                    <div className={`absolute top-4 left-[55%] w-[90%] h-0.5 ${index < currentStepIndex ? "bg-primary-600" : "bg-gray-200"
+                      }`} />
                   )}
                 </div>
               );
@@ -373,7 +370,7 @@ export default function ClientPortalPage() {
                   rows={2}
                   className="input-field text-sm mb-3 resize-none"
                 />
-                
+
                 <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
                   <p className="text-xs font-medium text-blue-900 mb-3">
                     Para aprobar el presupuesto, firma aquí:

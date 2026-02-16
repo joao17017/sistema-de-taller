@@ -36,7 +36,8 @@ export function SignaturePad({ onSave, initialValue, disabled }: SignaturePadPro
       };
       img.src = initialValue;
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialValue]);
 
   const getPos = (e: React.TouchEvent | React.MouseEvent) => {
     const canvas = canvasRef.current;
@@ -109,9 +110,8 @@ export function SignaturePad({ onSave, initialValue, disabled }: SignaturePadPro
       </div>
       <canvas
         ref={canvasRef}
-        className={`w-full h-32 border-2 border-dashed rounded-lg cursor-crosshair touch-none ${
-          disabled ? "border-gray-200 bg-gray-50" : "border-gray-300 bg-white hover:border-primary-400"
-        }`}
+        className={`w-full h-32 border-2 border-dashed rounded-lg cursor-crosshair touch-none ${disabled ? "border-gray-200 bg-gray-50" : "border-gray-300 bg-white hover:border-primary-400"
+          }`}
         onMouseDown={startDraw}
         onMouseMove={draw}
         onMouseUp={endDraw}

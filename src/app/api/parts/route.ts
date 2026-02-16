@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    const saved = savePart(part);
+    const saved = await savePart(part);
     return NextResponse.json(saved, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: "Error al crear pieza" }, { status: 500 });

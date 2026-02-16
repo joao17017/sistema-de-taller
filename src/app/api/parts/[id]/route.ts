@@ -35,7 +35,7 @@ export async function PUT(
       updatedAt: new Date().toISOString(),
     };
 
-    const saved = savePart(updated);
+    const saved = await savePart(updated);
     return NextResponse.json(saved);
   } catch (error) {
     return NextResponse.json({ error: "Error al actualizar pieza" }, { status: 500 });
@@ -47,7 +47,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const deleted = deletePart(params.id);
+    const deleted = await deletePart(params.id);
     if (!deleted) {
       return NextResponse.json({ error: "Pieza no encontrada" }, { status: 404 });
     }

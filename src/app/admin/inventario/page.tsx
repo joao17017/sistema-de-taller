@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Package, Plus, Pencil, Trash2, AlertTriangle, Search, X, Save } from "lucide-react";
+import { Package, Plus, Pencil, Trash2, AlertTriangle, Search, X, Check, ArrowUpDown, Filter, Save } from "lucide-react";
 import { formatMoneyShort } from "@/lib/currencies";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 interface Part {
   id: string;
@@ -14,10 +15,17 @@ interface Part {
   updatedAt: string;
 }
 
+type FilterType = "all" | "low" | "out";
+type SortField = "name" | "stock" | "cost" | "value";
+type SortOrder = "asc" | "desc";
+
 export default function InventarioPage() {
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<FilterType>("all");
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [showForm, setShowForm] = useState(false);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [formName, setFormName] = useState("");
@@ -25,7 +33,7 @@ export default function InventarioPage() {
   const [formStock, setFormStock] = useState(0);
   const [saving, setSaving] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState(3);
-  const [currency, setCurrency] = useState("MXN");
+  const { currency } = useCurrency();
 
   useEffect(() => {
     Promise.all([
@@ -34,27 +42,60 @@ export default function InventarioPage() {
     ]).then(([partsData, settings]) => {
       setParts(Array.isArray(partsData) ? partsData : []);
       setLowStockThreshold(settings.lowStockThreshold || 3);
-      if (settings?.currency) setCurrency(settings.currency);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  const filtered = parts.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const filtered = parts
+    .filter((p) => {
+      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
+      if (filter === "low") return matchesSearch && p.stock <= lowStockThreshold && p.stock > 0;
+      if (filter === "out") return matchesSearch && p.stock === 0;
+      return matchesSearch;
+    })
+    .sort((a, b) => {
+      let valA: number | string = "";
+      let valB: number | string = "";
+
+      switch (sortField) {
+        case "name":
+          valA = a.name.toLowerCase();
+          valB = b.name.toLowerCase();
+          break;
+        case "stock":
+          valA = a.stock;
+          valB = b.stock;
+          break;
+        case "cost":
+          valA = a.cost;
+          valB = b.cost;
+          break;
+        case "value":
+          valA = a.cost * a.stock;
+          valB = b.cost * b.stock;
+          break;
+      }
+
+      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
 
   const lowStockParts = parts.filter((p) => p.stock <= lowStockThreshold && p.stock > 0);
   const outOfStockParts = parts.filter((p) => p.stock === 0);
-  
+
   // Calculate total inventory value
   const totalValue = parts.reduce((sum, part) => sum + (part.cost * part.stock), 0);
   const totalItems = parts.reduce((sum, part) => sum + part.stock, 0);
-  
-  // Get most used parts (top 5)
-  const mostUsedParts = [...parts]
-    .filter((p) => (p.timesUsed || 0) > 0)
-    .sort((a, b) => (b.timesUsed || 0) - (a.timesUsed || 0))
-    .slice(0, 5);
 
   const openAdd = () => {
     setEditingPart(null);
@@ -126,180 +167,189 @@ export default function InventarioPage() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Package className="h-6 w-6" />
-            Inventario de Piezas
+            Inventario
           </h2>
-          <p className="text-gray-500 text-sm mt-1">{parts.length} piezas registradas</p>
+          <p className="text-gray-500 text-sm mt-1">Gestión de piezas y refacciones</p>
         </div>
-        <button onClick={openAdd} className="btn-primary flex items-center gap-2">
+        <button onClick={openAdd} className="btn-primary flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
           <Plus className="h-4 w-4" />
           Agregar Pieza
         </button>
       </div>
 
-      {/* Inventory Value Card */}
-      {parts.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="card bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-blue-600 font-medium mb-1">Valor Total</p>
-                <p className="text-2xl font-bold text-blue-900">{formatMoneyShort(totalValue, currency)}</p>
-              </div>
-              <div className="bg-blue-500/10 p-3 rounded-xl">
-                <Package className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-          <div className="card bg-gradient-to-br from-green-50 to-green-100/50 border-green-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-green-600 font-medium mb-1">Total Unidades</p>
-                <p className="text-2xl font-bold text-green-900">{totalItems}</p>
-              </div>
-              <div className="bg-green-500/10 p-3 rounded-xl">
-                <Package className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-          <div className="card bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-amber-600 font-medium mb-1">Alertas</p>
-                <p className="text-2xl font-bold text-amber-900">{lowStockParts.length + outOfStockParts.length}</p>
-              </div>
-              <div className="bg-amber-500/10 p-3 rounded-xl">
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
-              </div>
-            </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card !p-4 border-l-4 border-l-blue-500">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Valor Total</p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-gray-900">{formatMoneyShort(totalValue, currency)}</span>
           </div>
         </div>
-      )}
-
-      {/* Most Used Parts */}
-      {mostUsedParts.length > 0 && (
-        <div className="card">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Package className="h-4 w-4 text-primary-600" />
-            Piezas Más Usadas
-          </h3>
-          <div className="space-y-3">
-            {mostUsedParts.map((part, index) => (
-              <div key={part.id} className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary-100 text-primary-700 font-bold text-sm shrink-0">
-                  {index + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{part.name}</p>
-                  <p className="text-xs text-gray-500">
-                    Usada {part.timesUsed} {part.timesUsed === 1 ? 'vez' : 'veces'} • Stock: {part.stock}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-gray-900">{formatMoneyShort(part.cost, currency)}</p>
-                </div>
-              </div>
-            ))}
+        <div className="card !p-4 border-l-4 border-l-purple-500">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Piezas</p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-gray-900">{filtered.length}</span>
+            <span className="text-sm text-gray-500">({totalItems} unidades)</span>
           </div>
         </div>
-      )}
-
-      {/* Alerts */}
-      {(lowStockParts.length > 0 || outOfStockParts.length > 0) && (
-        <div className="space-y-2">
-          {outOfStockParts.length > 0 && (
-            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-red-800">Sin stock ({outOfStockParts.length})</p>
-                <p className="text-xs text-red-600 mt-0.5">{outOfStockParts.map((p) => p.name).join(", ")}</p>
-              </div>
-            </div>
-          )}
-          {lowStockParts.length > 0 && (
-            <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-yellow-800">Stock bajo ({lowStockParts.length})</p>
-                <p className="text-xs text-yellow-600 mt-0.5">{lowStockParts.map((p) => `${p.name} (${p.stock})`).join(", ")}</p>
-              </div>
-            </div>
-          )}
+        <div className="card !p-4 border-l-4 border-l-yellow-500">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock Bajo</p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-yellow-700">{lowStockParts.length}</span>
+            <span className="text-sm text-yellow-600">piezas</span>
+          </div>
         </div>
-      )}
+        <div className="card !p-4 border-l-4 border-l-red-500">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Agotado</p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-red-700">{outOfStockParts.length}</span>
+            <span className="text-sm text-red-600">piezas</span>
+          </div>
+        </div>
+      </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input-field pl-10"
-          placeholder="Buscar pieza..."
-        />
+      {/* Filters & Search */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-field pl-10"
+            placeholder="Buscar por nombre..."
+          />
+        </div>
+        <div className="flex bg-gray-100 p-1 rounded-lg shrink-0">
+          {(["all", "low", "out"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filter === f
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-200"
+                }`}
+            >
+              {f === "all" ? "Todos" : f === "low" ? "Stock Bajo" : "Agotados"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden !p-0">
+      <div className="card overflow-hidden !p-0 shadow-sm border border-gray-200">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Pieza</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Costo</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Stock</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 w-24">Acciones</th>
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className="px-6 py-3 cursor-pointer hover:bg-gray-100 transition-colors group"
+                  onClick={() => handleSort("name")}
+                >
+                  <div className="flex items-center gap-1">
+                    Pieza
+                    <ArrowUpDown className={`h-3 w-3 transition-opacity ${sortField === "name" ? "opacity-100 text-primary-600" : "opacity-0 group-hover:opacity-50"}`} />
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-3 text-right cursor-pointer hover:bg-gray-100 transition-colors group"
+                  onClick={() => handleSort("cost")}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    Costo Unit.
+                    <ArrowUpDown className={`h-3 w-3 transition-opacity ${sortField === "cost" ? "opacity-100 text-primary-600" : "opacity-0 group-hover:opacity-50"}`} />
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-3 text-center cursor-pointer hover:bg-gray-100 transition-colors group"
+                  onClick={() => handleSort("stock")}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Stock
+                    <ArrowUpDown className={`h-3 w-3 transition-opacity ${sortField === "stock" ? "opacity-100 text-primary-600" : "opacity-0 group-hover:opacity-50"}`} />
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-3 text-right cursor-pointer hover:bg-gray-100 transition-colors group"
+                  onClick={() => handleSort("value")}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    Valor Total
+                    <ArrowUpDown className={`h-3 w-3 transition-opacity ${sortField === "value" ? "opacity-100 text-primary-600" : "opacity-0 group-hover:opacity-50"}`} />
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 bg-white">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
-                    {search ? "Sin resultados" : "No hay piezas registradas"}
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <Package className="h-10 w-10 text-gray-300 mb-2" />
+                      <p className="text-sm font-medium">No se encontraron piezas</p>
+                      <p className="text-xs text-gray-400">Intenta ajustar los filtros de búsqueda</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                filtered.map((part) => (
-                  <tr key={part.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <span className="font-medium text-gray-900">{part.name}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-700">
-                      {formatMoneyShort(part.cost, currency)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          part.stock === 0
-                            ? "bg-red-100 text-red-700"
-                            : part.stock <= lowStockThreshold
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {part.stock}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => openEdit(part)}
-                          className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors"
-                          title="Editar"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(part.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filtered.map((part) => {
+                  const isLow = part.stock <= lowStockThreshold && part.stock > 0;
+                  const isOut = part.stock === 0;
+                  return (
+                    <tr key={part.id} className="hover:bg-gray-50/80 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isOut ? "bg-red-100 text-red-600" : isLow ? "bg-yellow-100 text-yellow-600" : "bg-blue-100 text-blue-600"
+                            }`}>
+                            <Package className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{part.name}</p>
+                            {part.timesUsed && part.timesUsed > 0 && (
+                              <p className="text-xs text-gray-500">Usada {part.timesUsed} veces</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right whitespace-nowrap text-gray-600">
+                        {formatMoneyShort(part.cost, currency)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${isOut
+                          ? "bg-red-50 text-red-700 border-red-200"
+                          : isLow
+                            ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                            : "bg-green-50 text-green-700 border-green-200"
+                          }`}>
+                          {isOut && <AlertTriangle className="h-3 w-3 mr-1" />}
+                          {part.stock} unid.
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right whitespace-nowrap font-medium text-gray-900">
+                        {formatMoneyShort(part.cost * part.stock, currency)}
+                      </td>
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => openEdit(part)}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Editar"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(part.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -308,58 +358,84 @@ export default function InventarioPage() {
 
       {/* Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900">
-                {editingPart ? "Editar Pieza" : "Nueva Pieza"}
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all scale-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">
+                {editingPart ? "Editar Pieza" : "Registrar Nueva Pieza"}
               </h3>
-              <button onClick={() => setShowForm(false)} className="p-1 text-gray-400 hover:text-gray-600">
+              <button
+                onClick={() => setShowForm(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-4">
+
+            <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la pieza</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre de la pieza</label>
                 <input
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="input-field"
-                  placeholder="Ej: Disco SSD 240GB"
+                  className="input-field w-full"
+                  placeholder="Ej: Batería iPhone 11 Original"
                   autoFocus
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Costo ({currency})</label>
-                  <input
-                    type="number"
-                    value={formCost || ""}
-                    onChange={(e) => setFormCost(Number(e.target.value))}
-                    className="input-field"
-                    min="0"
-                    placeholder="0"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Costo Unitario</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                    <input
+                      type="number"
+                      value={formCost || ""}
+                      onChange={(e) => setFormCost(Number(e.target.value))}
+                      className="input-field w-full pl-7"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Stock Inicial</label>
                   <input
                     type="number"
                     value={formStock || ""}
                     onChange={(e) => setFormStock(Number(e.target.value))}
-                    className="input-field"
+                    className="input-field w-full"
                     min="0"
                     placeholder="0"
                   />
                 </div>
               </div>
+
+              {formCost > 0 && formStock > 0 && (
+                <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex justify-between items-center text-sm">
+                  <span className="text-blue-700">Valor total del inventario:</span>
+                  <span className="font-bold text-blue-900">{formatMoneyShort(formCost * formStock, currency)}</span>
+                </div>
+              )}
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowForm(false)} className="btn-secondary">Cancelar</button>
-              <button onClick={handleSave} disabled={saving || !formName.trim()} className="btn-primary flex items-center gap-2">
+
+            <div className="flex justify-end gap-3 mt-8">
+              <button
+                onClick={() => setShowForm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || !formName.trim()}
+                className="btn-primary flex items-center gap-2 px-6"
+              >
                 {saving ? <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="h-4 w-4" />}
-                {saving ? "Guardando..." : "Guardar"}
+                {saving ? "Guardando..." : "Guardar Pieza"}
               </button>
             </div>
           </div>

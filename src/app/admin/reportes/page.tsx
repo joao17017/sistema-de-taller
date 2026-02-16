@@ -4,22 +4,23 @@ import { useEffect, useState } from "react";
 import { ServiceOrder, STATUS_CONFIG, OrderStatus } from "@/types/order";
 import { BarChart3, TrendingUp, Clock, DollarSign, Calendar } from "lucide-react";
 import { formatMoneyShort } from "@/lib/currencies";
+import { useCurrency } from "@/components/providers/currency-provider";
 
 export default function ReportesPage() {
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "year">("month");
-  const [currency, setCurrency] = useState("MXN");
+  const { currency } = useCurrency();
+  // const [currency, setCurrency] = useState("MXN"); // Removed
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/orders").then((r) => r.json()),
-      fetch("/api/settings").then((r) => r.json()),
-    ]).then(([data, settings]) => {
-      setOrders(Array.isArray(data) ? data : []);
-      if (settings?.currency) setCurrency(settings.currency);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    fetch("/api/orders?limit=10000")
+      .then((r) => r.json())
+      .then((data) => {
+        setOrders(Array.isArray(data?.orders) ? data.orders : Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const now = new Date();
@@ -127,11 +128,10 @@ export default function ReportesPage() {
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                period === p
-                  ? "bg-white text-primary-700 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${period === p
+                ? "bg-white text-primary-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
             >
               {p === "week" ? "7 días" : p === "month" ? "Mes" : "Año"}
             </button>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Settings } from "lucide-react";
-import { CURRENCIES, getCurrency } from "@/lib/currencies";
+import { Save, Settings, Download } from "lucide-react";
+import { CURRENCIES } from "@/lib/currencies";
+import { useToast } from "@/components/ui/ToastProvider";
 
 interface BusinessSettings {
   businessName: string;
@@ -21,6 +22,7 @@ interface BusinessSettings {
 }
 
 export default function ConfiguracionPage() {
+  const { toast, success, error } = useToast();
   const [settings, setSettings] = useState<BusinessSettings>({
     businessName: "",
     phone: "",
@@ -38,25 +40,44 @@ export default function ConfiguracionPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings").then((r) => r.json()).then((data) => {
       setSettings(data);
       setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
+    }).catch(() => {
+      error("Error al cargar la configuración");
+      setLoading(false);
+    });
+  }, [error]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setSettings((prev) => ({ ...prev, [name]: name === "lowStockThreshold" ? Number(value) : value }));
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      error("La imagen es muy pesada. Máximo 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (dataUrl) {
+        setSettings(prev => ({ ...prev, logoUrl: dataUrl }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
     setSaving(true);
-    setError("");
-    setSuccess("");
     try {
       const res = await fetch("/api/settings", {
         method: "PUT",
@@ -64,12 +85,35 @@ export default function ConfiguracionPage() {
         body: JSON.stringify(settings),
       });
       if (!res.ok) throw new Error();
-      setSuccess("Configuración guardada correctamente");
-      setTimeout(() => setSuccess(""), 3000);
+      success("Configuración guardada correctamente");
+      // Reload to ensure all components (CurrencyProvider, Layouts) pick up new settings
+      setTimeout(() => window.location.reload(), 1000);
     } catch {
-      setError("Error al guardar la configuración");
+      error("Error al guardar la configuración");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleBackup = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch("/api/backup");
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      success("Respaldo descargado correctamente");
+    } catch {
+      error("Error al descargar el respaldo");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -83,18 +127,29 @@ export default function ConfiguracionPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Settings className="h-6 w-6" />
-          Configuración
-        </h2>
-        <p className="text-gray-500 text-sm mt-1">
-          Datos del negocio que aparecen en el sitio público
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Settings className="h-6 w-6" />
+            Configuración
+          </h2>
+          <p className="text-gray-500 text-sm mt-1">
+            Datos del negocio que aparecen en el sitio público
+          </p>
+        </div>
+        <button
+          onClick={handleBackup}
+          disabled={downloading}
+          className="btn-secondary flex items-center gap-2"
+        >
+          {downloading ? (
+            <div className="h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          Descargar Respaldo (ZIP)
+        </button>
       </div>
-
-      {error && <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
-      {success && <div className="p-4 bg-green-50 text-green-700 rounded-lg text-sm">{success}</div>}
 
       <div className="card">
         <h3 className="font-semibold text-gray-900 mb-4">Información del Negocio</h3>
@@ -196,24 +251,46 @@ export default function ConfiguracionPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL del Logo (opcional)
+              Logo del Negocio
             </label>
-            <input
-              type="url"
-              name="logoUrl"
-              value={settings.logoUrl}
-              onChange={handleChange}
-              className="input-field"
-              placeholder="https://ejemplo.com/mi-logo.png"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Sube tu logo a un servicio como imgur.com y pega la URL aquí. Deja vacío para usar el ícono predeterminado.
-            </p>
-            {settings.logoUrl && (
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg inline-block">
-                <img src={settings.logoUrl} alt="Preview" className="h-10 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            <div className="flex items-start gap-4">
+              {settings.logoUrl && (
+                <div className="relative group w-24 h-24 shrink-0 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                  <img src={settings.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                  <button
+                    onClick={() => setSettings(prev => ({ ...prev, logoUrl: "" }))}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Eliminar logo"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <div className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 mb-2"
+                />
+                <p className="text-xs text-gray-400">
+                  Sube tu logo (PNG, JPG). Recomendado: fondo transparente. Máx 2MB.
+                </p>
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-gray-500 mb-1">O pega una URL:</p>
+                  <input
+                    type="url"
+                    name="logoUrl"
+                    value={settings.logoUrl}
+                    onChange={handleChange}
+                    className="input-field text-xs py-1.5"
+                    placeholder="https://..."
+                  />
+                </div>
               </div>
-            )}
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -272,7 +349,7 @@ export default function ConfiguracionPage() {
                 placeholder="3"
               />
               <p className="text-xs text-gray-400 mt-1">
-                Piezas con stock igual o menor se marcarán como "stock bajo"
+                Piezas con stock igual o menor se marcarán como &quot;stock bajo&quot;
               </p>
             </div>
           </div>

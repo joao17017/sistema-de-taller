@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { formatMoney } from "@/lib/currencies";
 import { STATUS_CONFIG, OrderStatus } from "@/types/order";
+import { useCurrency } from "@/components/providers/currency-provider";
 import {
   Monitor,
   Search,
@@ -65,6 +66,7 @@ export default function HomePage() {
   const [verifyPhone, setVerifyPhone] = useState("");
   const [verifyError, setVerifyError] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const { currency } = useCurrency();
 
   const handleVerifyPortal = async (orderNum: string) => {
     if (!verifyPhone.trim()) { setVerifyError("Ingresa tu teléfono"); return; }
@@ -90,7 +92,7 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then(setSettings).catch(() => {});
+    fetch("/api/settings").then((r) => r.json()).then(setSettings).catch(() => { });
   }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -174,9 +176,8 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={() => { setSearchType("order"); setError(""); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      searchType === "order" ? "bg-white text-primary-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${searchType === "order" ? "bg-white text-primary-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     <Hash className="h-3.5 w-3.5" />
                     N° de Orden
@@ -184,9 +185,8 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={() => { setSearchType("phone"); setError(""); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      searchType === "phone" ? "bg-white text-primary-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${searchType === "phone" ? "bg-white text-primary-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                      }`}
                   >
                     <Phone className="h-3.5 w-3.5" />
                     Teléfono
@@ -257,23 +257,20 @@ export default function HomePage() {
                       return (
                         <div key={step} className="flex-1 flex flex-col items-center relative">
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
-                              isCompleted
-                                ? "bg-primary-600 text-white"
-                                : "bg-gray-200 text-gray-400"
-                            } ${isCurrent ? "ring-4 ring-primary-100" : ""}`}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${isCompleted
+                              ? "bg-primary-600 text-white"
+                              : "bg-gray-200 text-gray-400"
+                              } ${isCurrent ? "ring-4 ring-primary-100" : ""}`}
                           >
                             {isCompleted ? <CheckCircle className="h-4 w-4" /> : index + 1}
                           </div>
-                          <p className={`text-[10px] mt-1.5 text-center leading-tight ${
-                            isCompleted ? "text-primary-600 font-medium" : "text-gray-400"
-                          }`}>
+                          <p className={`text-[10px] mt-1.5 text-center leading-tight ${isCompleted ? "text-primary-600 font-medium" : "text-gray-400"
+                            }`}>
                             {STATUS_CONFIG[step].label}
                           </p>
                           {index < STATUS_STEPS.length - 1 && (
-                            <div className={`absolute top-4 left-[55%] w-[90%] h-0.5 ${
-                              index < currentStepIndex ? "bg-primary-600" : "bg-gray-200"
-                            }`} />
+                            <div className={`absolute top-4 left-[55%] w-[90%] h-0.5 ${index < currentStepIndex ? "bg-primary-600" : "bg-gray-200"
+                              }`} />
                           )}
                         </div>
                       );
@@ -305,7 +302,7 @@ export default function HomePage() {
                   {order.estimatedCost > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-400">Costo Estimado</span>
-                      <span className="font-semibold text-gray-900">{formatMoney(order.estimatedCost, settings?.currency || "MXN")}</span>
+                      <span className="font-semibold text-gray-900">{formatMoney(order.estimatedCost, currency)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
@@ -368,7 +365,7 @@ export default function HomePage() {
                       <div>
                         <span className="text-gray-400">Costo</span>
                         <p className="font-medium text-gray-900">
-                          {o.estimatedCost > 0 ? formatMoney(o.estimatedCost, settings?.currency || "MXN") : "Por determinar"}
+                          {o.estimatedCost > 0 ? formatMoney(o.estimatedCost, currency) : "Por determinar"}
                         </p>
                       </div>
                     </div>

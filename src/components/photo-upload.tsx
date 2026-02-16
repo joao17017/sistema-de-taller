@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Camera, X, Image as ImageIcon } from "lucide-react";
 
 interface PhotoUploadProps {
@@ -13,25 +13,43 @@ interface PhotoUploadProps {
 export function PhotoUpload({ photos, onChange, maxPhotos = 5, disabled }: PhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewing, setPreviewing] = useState<string | null>(null);
+  // Ref to track the latest photos array to avoid stale closure issues
+  const photosRef = useRef<string[]>(photos);
+  photosRef.current = photos;
 
-  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-      if (photos.length >= maxPhotos) return;
+    // Read all files and accumulate results before calling onChange once
+    const fileArray = Array.from(files);
+    const results: string[] = [];
+    let completed = 0;
+
+    fileArray.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string;
         if (dataUrl) {
-          onChange([...photos, dataUrl]);
+          results.push(dataUrl);
+        }
+        completed++;
+
+        // When all files are read, combine with current photos
+        if (completed === fileArray.length) {
+          const currentPhotos = photosRef.current;
+          const remaining = maxPhotos - currentPhotos.length;
+          const toAdd = results.slice(0, remaining);
+          if (toAdd.length > 0) {
+            onChange([...currentPhotos, ...toAdd]);
+          }
         }
       };
       reader.readAsDataURL(file);
     });
 
     if (inputRef.current) inputRef.current.value = "";
-  };
+  }, [onChange, maxPhotos]);
 
   const removePhoto = (index: number) => {
     onChange(photos.filter((_, i) => i !== index));
@@ -94,6 +112,7 @@ export function PhotoUpload({ photos, onChange, maxPhotos = 5, disabled }: Photo
           <button
             className="absolute top-4 right-4 text-white p-2"
             onClick={() => setPreviewing(null)}
+            aria-label="Cerrar vista previa"
           >
             <X className="h-6 w-6" />
           </button>

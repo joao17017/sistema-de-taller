@@ -53,8 +53,8 @@ export async function POST(
       updatedAt: now,
     };
 
-    const saved = saveOrder(updated);
-    
+    const saved = await saveOrder(updated);
+
     // Create notification
     if (action === "approve") {
       createNotification(
@@ -73,7 +73,7 @@ export async function POST(
         order.orderNumber
       );
     }
-    
+
     return NextResponse.json({ success: true, budgetStatus: saved.budgetStatus });
   } catch {
     return NextResponse.json({ error: "Error al procesar" }, { status: 500 });
