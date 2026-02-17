@@ -155,7 +155,7 @@ export default function OrderDetailPage() {
         .replace("{equipo}", `${order.deviceBrand} ${order.deviceType}`)
         .replace("{orden}", order.orderNumber);
       const phone = order.customerPhone.replace(/\D/g, "");
-      const fullPhone = phone.startsWith("52") ? phone : `52${phone}`;
+      const fullPhone = phone.startsWith("593") ? phone : `593${phone}`;
       window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, "_blank");
     });
   };
@@ -167,7 +167,7 @@ export default function OrderDetailPage() {
     const bInfo = [s.address, s.phone].filter(Boolean).join(" | Tel: ");
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
-    const deliveryStr = order.estimatedDelivery ? new Date(order.estimatedDelivery + "T12:00:00").toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" }) : "";
+    const deliveryStr = order.estimatedDelivery ? new Date(order.estimatedDelivery + "T12:00:00").toLocaleDateString("es-EC", { year: "numeric", month: "long", day: "numeric" }) : "";
     printWindow.document.write(`<!DOCTYPE html><html><head><title>Recibo ${order.orderNumber}</title>
 <style>body{font-family:Arial,sans-serif;max-width:400px;margin:0 auto;padding:20px;font-size:14px}
 h1{text-align:center;font-size:18px;margin-bottom:4px}h2{text-align:center;font-size:12px;color:#666;font-weight:normal;margin-top:0}
@@ -191,9 +191,9 @@ ${order.accessories ? `<div class="row"><span class="label">Accesorios:</span><s
 <div class="row"><span class="label">Problema:</span></div>
 <div>${order.problemDescription}</div>
 ${order.diagnosis ? `<div class="divider"></div><div class="row"><span class="label">Diagnóstico:</span></div><div>${order.diagnosis}</div>` : ""}
-${order.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class="label">Costo Estimado:</span><span class="value">$${order.estimatedCost.toLocaleString("es-MX")} MXN</span></div>` : ""}
+${order.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class="label">Costo Estimado:</span><span class="value">$${order.estimatedCost.toLocaleString("es-EC")} USD</span></div>` : ""}
 <div class="divider"></div>
-<div class="row"><span class="label">Fecha de ingreso:</span><span class="value">${new Date(order.createdAt).toLocaleDateString("es-MX")}</span></div>
+<div class="row"><span class="label">Fecha de ingreso:</span><span class="value">${new Date(order.createdAt).toLocaleDateString("es-EC")}</span></div>
 ${deliveryStr ? `<div class="row"><span class="label">Entrega estimada:</span><span class="value">${deliveryStr}</span></div>` : ""}
 <div class="footer"><p>Consulte el estado de su orden en línea con el número de orden mostrado arriba.</p>
 <p>Gracias por su preferencia.</p></div>
@@ -249,7 +249,7 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
             </div>
             <p className="text-gray-500 text-sm">
               Creada el{" "}
-              {new Date(order.createdAt).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
+              {new Date(order.createdAt).toLocaleDateString("es-EC", { year: "numeric", month: "long", day: "numeric" })}
             </p>
           </div>
         </div>
@@ -355,15 +355,15 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Costo estimado (MXN)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Costo estimado (USD)</label>
                 <input type="number" name="estimatedCost" value={order.estimatedCost || ""} onChange={handleChange} className="input-field" min="0" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Costo piezas (MXN)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Costo piezas (USD)</label>
                 <input type="number" name="partsCost" value={order.partsCost || ""} onChange={handleChange} className="input-field" min="0" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mano de obra (MXN)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mano de obra (USD)</label>
                 <input type="number" name="laborCost" value={order.laborCost || ""} onChange={handleChange} className="input-field" min="0" />
               </div>
             </div>
@@ -371,7 +371,7 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg text-sm">
                 <span className="text-gray-600">Ganancia:</span>
                 <span className="font-bold text-green-700">
-                  ${((order.estimatedCost || 0) - (order.partsCost || 0) - (order.laborCost || 0)).toLocaleString("es-MX")} MXN
+                  ${((order.estimatedCost || 0) - (order.partsCost || 0) - (order.laborCost || 0)).toLocaleString("es-EC")} USD
                 </span>
               </div>
             )}
@@ -445,7 +445,7 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
                   <div key={up.partId} className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <div className="flex-1">
                       <span className="text-sm font-medium text-gray-900">{up.partName}</span>
-                      <span className="text-xs text-gray-500 ml-2">x{up.quantity} — ${(up.unitCost * up.quantity).toLocaleString("es-MX")}</span>
+                      <span className="text-xs text-gray-500 ml-2">x{up.quantity} — ${(up.unitCost * up.quantity).toLocaleString("es-EC")}</span>
                     </div>
                     <button onClick={() => removeUsedPart(up.partId)} className="text-gray-300 hover:text-red-500 p-1">
                       <Trash2 className="h-3.5 w-3.5" />
@@ -455,7 +455,7 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
                 <div className="flex justify-between text-sm font-medium pt-2 border-t border-gray-200">
                   <span className="text-gray-600">Total piezas:</span>
                   <span className="text-gray-900">
-                    ${(order.usedParts || []).reduce((s, p) => s + p.unitCost * p.quantity, 0).toLocaleString("es-MX")} MXN
+                    ${(order.usedParts || []).reduce((s, p) => s + p.unitCost * p.quantity, 0).toLocaleString("es-EC")} USD
                   </span>
                 </div>
               </div>
@@ -492,7 +492,7 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
                     <div>
                       <p className="text-sm text-gray-800">{note.text}</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(note.date).toLocaleString("es-MX")}
+                        {new Date(note.date).toLocaleString("es-EC")}
                       </p>
                     </div>
                     <button onClick={() => removeNote(note.id)} className="text-gray-300 hover:text-red-500 p-1">
@@ -541,7 +541,7 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
                     </span>
                   </div>
                   <span className="text-xs text-gray-400 shrink-0">
-                    {new Date(entry.date).toLocaleString("es-MX")}
+                    {new Date(entry.date).toLocaleString("es-EC")}
                   </span>
                 </div>
               ))}
@@ -552,7 +552,7 @@ ${order.signature ? `<div class="divider"></div><div style="text-align:center"><
 
       {/* Footer info */}
       <div className="mt-6 text-xs text-gray-400 text-right">
-        Última actualización: {new Date(order.updatedAt).toLocaleString("es-MX")}
+        Última actualización: {new Date(order.updatedAt).toLocaleString("es-EC")}
       </div>
     </div>
   );

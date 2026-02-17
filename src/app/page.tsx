@@ -302,14 +302,14 @@ export default function HomePage() {
                   <p className="text-gray-500">Costo Estimado</p>
                   <p className="font-medium text-lg">
                     {order.estimatedCost > 0
-                      ? `$${order.estimatedCost.toLocaleString("es-MX")} MXN`
+                      ? `$${order.estimatedCost.toLocaleString("es-EC")} USD`
                       : "Por determinar"}
                   </p>
                 </div>
                 <div>
                   <p className="text-gray-500">Fecha de Ingreso</p>
                   <p className="font-medium">
-                    {new Date(order.createdAt).toLocaleDateString("es-MX", {
+                    {new Date(order.createdAt).toLocaleDateString("es-EC", {
                       year: "numeric",
                       month: "long",
                       day: "numeric",
@@ -348,7 +348,7 @@ export default function HomePage() {
                   <div>
                     <p className="text-gray-500">Costo Estimado</p>
                     <p className="font-medium">
-                      {o.estimatedCost > 0 ? `$${o.estimatedCost.toLocaleString("es-MX")} MXN` : "Por determinar"}
+                      {o.estimatedCost > 0 ? `$${o.estimatedCost.toLocaleString("es-EC")} USD` : "Por determinar"}
                     </p>
                   </div>
                   <div>
@@ -358,7 +358,7 @@ export default function HomePage() {
                   <div>
                     <p className="text-gray-500">Fecha</p>
                     <p className="font-medium">
-                      {new Date(o.createdAt).toLocaleDateString("es-MX")}
+                      {new Date(o.createdAt).toLocaleDateString("es-EC")}
                     </p>
                   </div>
                 </div>

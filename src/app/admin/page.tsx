@@ -192,7 +192,7 @@ export default function AdminDashboard() {
                       </span>
                     </td>
                     <td className="py-3 px-2 text-gray-400 hidden sm:table-cell">
-                      {new Date(order.updatedAt).toLocaleDateString("es-MX")}
+                      {new Date(order.updatedAt).toLocaleDateString("es-EC")}
                     </td>
                   </tr>
                 ))}

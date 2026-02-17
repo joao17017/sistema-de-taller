@@ -157,10 +157,10 @@ export default function ConfiguracionPage() {
               value={settings.whatsapp}
               onChange={handleChange}
               className="input-field"
-              placeholder="521234567890"
+              placeholder="5931234567890"
             />
             <p className="text-xs text-gray-400 mt-1">
-              Ejemplo: 521234567890 (52 = México, seguido del número)
+              Ejemplo: 5931234567890 (593 = México, seguido del número)
             </p>
           </div>
           <div>

@@ -184,7 +184,7 @@ export default function InventarioPage() {
                       <span className="font-medium text-gray-900">{part.name}</span>
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700">
-                      ${part.cost.toLocaleString("es-MX")}
+                      ${part.cost.toLocaleString("es-EC")}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span
@@ -251,7 +251,7 @@ export default function InventarioPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Costo (MXN)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Costo (USD)</label>
                   <input
                     type="number"
                     value={formCost || ""}

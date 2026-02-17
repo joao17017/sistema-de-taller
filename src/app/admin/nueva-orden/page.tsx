@@ -101,9 +101,9 @@ ${o.accessories ? `<div class="row"><span class="label">Accesorios:</span><span 
 <div class="divider"></div>
 <div class="row"><span class="label">Problema:</span></div>
 <div>${o.problemDescription}</div>
-${o.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class="label">Costo Estimado:</span><span class="value">$${o.estimatedCost.toLocaleString("es-MX")} MXN</span></div>` : ""}
+${o.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class="label">Costo Estimado:</span><span class="value">$${o.estimatedCost.toLocaleString("es-EC")} USD</span></div>` : ""}
 <div class="divider"></div>
-<div class="row"><span class="label">Fecha:</span><span class="value">${new Date(o.createdAt).toLocaleDateString("es-MX")}</span></div>
+<div class="row"><span class="label">Fecha:</span><span class="value">${new Date(o.createdAt).toLocaleDateString("es-EC")}</span></div>
 <div class="footer"><p>Consulte el estado de su orden en línea con el número de orden mostrado arriba.</p><p>Gracias por su preferencia.</p></div>
 <div class="terms"><strong>TÉRMINOS Y CONDICIONES:</strong><br>
 1. El equipo no reclamado después de 30 días de notificado como listo se cobrará almacenaje.<br>
@@ -125,7 +125,7 @@ ${o.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class
         .replace("{equipo}", `${createdOrder.deviceBrand} ${createdOrder.deviceType}`)
         .replace("{orden}", createdOrder.orderNumber);
       const phone = createdOrder.customerPhone.replace(/\D/g, "");
-      const fullPhone = phone.startsWith("52") ? phone : `52${phone}`;
+      const fullPhone = phone.startsWith("593") ? phone : `593${phone}`;
       window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, "_blank");
     });
   };
@@ -139,7 +139,7 @@ ${o.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-1">¡Orden Creada!</h2>
           <p className="text-3xl font-mono font-bold text-primary-600 my-3 tracking-wider">{createdOrder.orderNumber}</p>
-          <p className="text-gray-400 text-sm mb-8">Registrada el {new Date(createdOrder.createdAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}</p>
+          <p className="text-gray-400 text-sm mb-8">Registrada el {new Date(createdOrder.createdAt).toLocaleDateString("es-EC", { day: "numeric", month: "long", year: "numeric" })}</p>
 
           <div className="space-y-3">
             <button
@@ -373,7 +373,7 @@ ${o.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Costo estimado (MXN)
+                  Costo estimado (USD)
                 </label>
                 <input
                   type="number"
@@ -387,7 +387,7 @@ ${o.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Costo de piezas (MXN)
+                  Costo de piezas (USD)
                 </label>
                 <input
                   type="number"
@@ -401,7 +401,7 @@ ${o.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mano de obra (MXN)
+                  Mano de obra (USD)
                 </label>
                 <input
                   type="number"
@@ -418,7 +418,7 @@ ${o.estimatedCost > 0 ? `<div class="divider"></div><div class="row"><span class
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg text-sm">
                 <span className="text-gray-600">Ganancia estimada:</span>
                 <span className="font-bold text-green-700">
-                  ${((form.estimatedCost || 0) - (form.partsCost || 0) - (form.laborCost || 0)).toLocaleString("es-MX")} MXN
+                  ${((form.estimatedCost || 0) - (form.partsCost || 0) - (form.laborCost || 0)).toLocaleString("es-EC")} USD
                 </span>
               </div>
             )}

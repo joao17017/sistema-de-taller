@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
   const rows = orders.map((o) => [
     o.orderNumber,
-    new Date(o.createdAt).toLocaleDateString("es-MX"),
+    new Date(o.createdAt).toLocaleDateString("es-EC"),
     STATUS_CONFIG[o.status]?.label || o.status,
     o.customerName,
     o.customerPhone,
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     o.laborCost || 0,
     o.estimatedDelivery || "",
     Array.isArray(o.internalNotes) ? o.internalNotes.map((n) => n.text).join(" | ") : "",
-    new Date(o.updatedAt).toLocaleDateString("es-MX"),
+    new Date(o.updatedAt).toLocaleDateString("es-EC"),
   ]);
 
   const BOM = "\uFEFF";

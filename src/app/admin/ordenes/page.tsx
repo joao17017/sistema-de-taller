@@ -88,7 +88,7 @@ export default function OrdenesPage() {
       `"${(o.diagnosis || "").replace(/"/g, '""')}"`,
       o.estimatedCost || 0,
       STATUS_CONFIG[o.status]?.label || o.status,
-      new Date(o.createdAt).toLocaleDateString("es-MX"),
+      new Date(o.createdAt).toLocaleDateString("es-EC"),
     ]);
     const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -204,11 +204,11 @@ export default function OrdenesPage() {
                   </td>
                   <td className="py-3 px-4 text-gray-700 hidden sm:table-cell">
                     {order.estimatedCost > 0
-                      ? `$${order.estimatedCost.toLocaleString("es-MX")}`
+                      ? `$${order.estimatedCost.toLocaleString("es-EC")}`
                       : "-"}
                   </td>
                   <td className="py-3 px-4 text-gray-400 text-xs hidden lg:table-cell">
-                    {new Date(order.createdAt).toLocaleDateString("es-MX")}
+                    {new Date(order.createdAt).toLocaleDateString("es-EC")}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-end gap-1">
